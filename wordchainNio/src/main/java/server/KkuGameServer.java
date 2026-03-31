@@ -51,7 +51,7 @@ public class KkuGameServer {
             roomManager = new RoomManager(MAX_PLAYERS_PER_ROOM, scheduler);
 
             // 주기적인 생존 확인(Heartbeat) 스케줄링
-            scheduler.scheduleAtFixedRate(KkuGameServer::checkAliveClients, 10, 10, TimeUnit.SECONDS);
+            scheduler.scheduleAtFixedRate(KkuGameServer::checkAliveClients, 10, 50, TimeUnit.SECONDS);
 
             System.out.println(">>> 끄투 게임 서버(NIO 멀티룸) 준비 완료. 포트: " + PORT);
 
