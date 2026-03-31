@@ -13,6 +13,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import util.FastSerializer;
+
 /**
  * 서버의 네트워크 관리자(접속 수락, 이벤트 분배)를 담당하는 최상위 클래스
  */
@@ -24,6 +26,10 @@ public class KkuGameServer {
     private static final ExecutorService workerPool = Executors.newFixedThreadPool(
             Runtime.getRuntime().availableProcessors() * 2 //기본 1코어2스레드 네트워크경우 거기에*2를 해주는게관행
     );
+    
+        public static FastSerializer getSerializer() {
+        	return FastSerializer.getInstance();
+        }
 
 
 	// 멀티룸 관리를 위한 매니저

@@ -16,6 +16,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import dto.Message;
 import dto.MsgType;
 import dto.WordStatus;
+import util.FastSerializer;
 
 // 각 클라이언트를 1대1로 관리하는 NIO 핸들러
 public class ClientHandler {
@@ -221,13 +222,13 @@ public class ClientHandler {
     }
 
     public void enqueue(Message msg) {
-        if (!running) return;
-
         try {
-            ByteBuffer packet = encodeMessage(msg);
+            // 1. 현재 워커 스레드의 전용 도구를 가져와서 바로 직렬화 
+            ByteBuffer packet = FastSerializer.getInstance().serialize(msg);
+            
             sendQueue.offer(packet);
-            enableWriteInterest(); // 보낼 게 생겼으니 Selector에게 알림
-        } catch (Exception e) {
+            enableWriteInterest();
+        } catch (IOException e) {
             handleDisconnection();
         }
     }
