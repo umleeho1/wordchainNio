@@ -2,6 +2,7 @@ package server;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.StandardSocketOptions;
 import java.nio.channels.CancelledKeyException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -23,6 +24,7 @@ public class KkuGameServer {
     private static final int MAX_PLAYERS_PER_ROOM = 5; // 한 방당 최대 인원
     private static final int PORT = 5000;
     private static final int HEARTBEAT_TIMEOUT = 100000; // 100초 (생존 확인 기준)
+    private static final int BufferSize = 1024*256;
     private static final ExecutorService workerPool = Executors.newFixedThreadPool(
             Runtime.getRuntime().availableProcessors() * 2 //기본 1코어2스레드 네트워크경우 거기에*2를 해주는게관행
     );
@@ -105,6 +107,26 @@ public class KkuGameServer {
         if (clientChannel == null) return;
 
         clientChannel.configureBlocking(false);
+        //버퍼크기확인
+        try {
+        clientChannel.setOption(StandardSocketOptions.SO_RCVBUF, BufferSize);    
+        clientChannel.setOption(StandardSocketOptions.SO_SNDBUF, BufferSize);
+        int rcvBuf = clientChannel.getOption(StandardSocketOptions.SO_RCVBUF);
+        int sndBuf = clientChannel.getOption(StandardSocketOptions.SO_SNDBUF);
+        
+
+        // 1,000명 테스트 시 너무 많이 찍힐 수 있으니 처음 몇 명만 보거나 
+        // 특정 수치 이하일 때만 경고를 남기는 식으로 활용하세요.
+        System.out.println("----------------------------------------");
+        System.out.println("[시스템] 소켓 버퍼 정보 확인");
+        System.out.println(" -> 수신(Receive) 버퍼: " + (rcvBuf / 1024) + " KB");
+        System.out.println(" -> 송신(Send) 버퍼: " + (sndBuf / 1024) + " KB");
+        
+        //버퍼확인코드
+        System.out.println("----------------------------------------");
+        } catch (Exception e) {
+            System.err.println("버퍼 정보 조회 실패: " + e.getMessage());
+        }
 
         // 빈 자리가 있는 방을 찾거나 새로 생성함
         GameSession availableSession = roomManager.findOrCreateRoom();

@@ -27,7 +27,7 @@ public class FastSerializer {
     public ByteBuffer serialize(Object obj) throws IOException {
         bos.reset(); // 버퍼 인덱스 초기화 (배열 재사용)
         
-        // [수정 포인트] oos의 내부 상태를 초기화하고 헤더를 다시 쓰게 함
+        //  oos의 내부 상태를 초기화하고 헤더를 다시 쓰게 함
         oos.reset(); 
         oos.writeStreamHeader(); // 매 패킷마다 헤더를 포함시킴
 
@@ -35,7 +35,7 @@ public class FastSerializer {
         oos.flush();
 
         int dataSize = bos.size();
-        // ByteBuffer 할당 (송신 큐에 들어가야 하므로 이 객체 생성은 필요합니다)
+        // ByteBuffer 할당 
         ByteBuffer buffer = ByteBuffer.allocate(4 + dataSize);
         buffer.putInt(dataSize);
         buffer.put(bos.getInternalBuffer(), 0, dataSize);
