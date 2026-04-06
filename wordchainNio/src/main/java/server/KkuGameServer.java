@@ -107,26 +107,10 @@ public class KkuGameServer {
         if (clientChannel == null) return;
 
         clientChannel.configureBlocking(false);
-        //버퍼크기확인
-        try {
         clientChannel.setOption(StandardSocketOptions.SO_RCVBUF, BufferSize);    
         clientChannel.setOption(StandardSocketOptions.SO_SNDBUF, BufferSize);
-        // int rcvBuf = clientChannel.getOption(StandardSocketOptions.SO_RCVBUF);
-        // int sndBuf = clientChannel.getOption(StandardSocketOptions.SO_SNDBUF);
-        
 
-        // 1,000명 테스트 시 너무 많이 찍힐 수 있으니 처음 몇 명만 보거나 
-        // 특정 수치 이하일 때만 경고를 남기는 식으로 활용하세요.
-        System.out.println("----------------------------------------");
-        System.out.println("[시스템] 소켓 버퍼 정보 확인");
-        System.out.println(" -> 수신(Receive) 버퍼: " + (rcvBuf / 1024) + " KB");
-        System.out.println(" -> 송신(Send) 버퍼: " + (sndBuf / 1024) + " KB");
-        
-        //버퍼확인코드
-        System.out.println("----------------------------------------");
-        } catch (Exception e) {
-            System.err.println("버퍼 정보 조회 실패: " + e.getMessage());
-        }
+
 
         // 빈 자리가 있는 방을 찾거나 새로 생성함
         GameSession availableSession = roomManager.findOrCreateRoom();
