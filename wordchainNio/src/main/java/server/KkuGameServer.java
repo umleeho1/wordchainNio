@@ -111,8 +111,8 @@ public class KkuGameServer {
         try {
         clientChannel.setOption(StandardSocketOptions.SO_RCVBUF, BufferSize);    
         clientChannel.setOption(StandardSocketOptions.SO_SNDBUF, BufferSize);
-        int rcvBuf = clientChannel.getOption(StandardSocketOptions.SO_RCVBUF);
-        int sndBuf = clientChannel.getOption(StandardSocketOptions.SO_SNDBUF);
+        // int rcvBuf = clientChannel.getOption(StandardSocketOptions.SO_RCVBUF);
+        // int sndBuf = clientChannel.getOption(StandardSocketOptions.SO_SNDBUF);
         
 
         // 1,000명 테스트 시 너무 많이 찍힐 수 있으니 처음 몇 명만 보거나 
