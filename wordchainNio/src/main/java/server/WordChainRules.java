@@ -25,7 +25,7 @@ public class WordChainRules {
     private final int RECENTLY_WORD_LIMIT = 50;
 
     /**
-     * 입력된 단어가 규칙에 맞는지 검사하는 핵심 메서드
+     * 입력된 단어가 규칙에 맞는지 검사하는  메서드
      */
     public synchronized WordStatus checkWord(String word) {
         word = word.trim();
@@ -35,11 +35,10 @@ public class WordChainRules {
             return WordStatus.TOO_SHORT;
         }
 
-//        // 2. 사전 존재 여부 검사 (KoreanWordChecker 연동)
-//        // [수정] 주석을 해제하여 국립국어원 API로 실제 단어인지 확인합니다.
-//        if (!KoreanWordChecker.isValidWord(word)) {
-//            return WordStatus.NO_WORD;
-//        }
+       // 2. 사전 존재 여부 검사 (KoreanWordChecker api연동)
+       if (!KoreanWordChecker.isValidWord(word)) {
+           return WordStatus.NO_WORD;
+       }
 
         // 3. 중복 검사 (최근에 사용한 단어인지 확인)
         if (wordHistory.contains(word)) {

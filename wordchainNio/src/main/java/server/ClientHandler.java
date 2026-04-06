@@ -159,7 +159,7 @@ public class ClientHandler {
         }
     }
 
- // [수정된 부분] 패킷이 완성되었을 때 호출되는 지점
+ // 패킷이 완성되었을 때 호출되는 지점
     private void onMessage(Message msg) {
         // Selector 스레드가 여기서 멈추지 않도록, 모든 로직을 워커 풀에 던집니다.
         KkuGameServer.getWorkerPool().execute(() -> {
@@ -180,7 +180,7 @@ public class ClientHandler {
             }
         });
     }
-
+    //메세지 처리로직 (도배방지,메세지타입에따른 처리로직분류)
     private void handleMessage(Message msg) {
         if (isSpamming()) {
             Message spamError = new Message(MsgType.ERROR, "서버", "경고: 메시지 전송이 너무 빠릅니다!");
@@ -232,7 +232,7 @@ public class ClientHandler {
             handleDisconnection();
         }
     }
-
+    //인코딩
     private ByteBuffer encodeMessage(Message msg) throws IOException {
         byte[] body = serializeMessage(msg);
         ByteBuffer packet = ByteBuffer.allocate(4 + body.length);
@@ -241,7 +241,7 @@ public class ClientHandler {
         packet.flip();
         return packet;
     }
-
+    //직렬화
     private byte[] serializeMessage(Message msg) throws IOException {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         try (ObjectOutputStream oos = new ObjectOutputStream(bos)) {
@@ -250,7 +250,7 @@ public class ClientHandler {
             return bos.toByteArray();
         }
     }
-
+    //역직렬화
     private Message deserializeMessage(byte[] data) {
         try (ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(data))) {
             return (Message) ois.readObject();
@@ -258,7 +258,7 @@ public class ClientHandler {
             return null;
         }
     }
-
+    //도배방지로직
     private boolean isSpamming() {
         long currentTime = System.currentTimeMillis();
         while (!messageTimestamps.isEmpty() && (currentTime - messageTimestamps.peekFirst() > TIME_WINDOW)) {
@@ -272,7 +272,7 @@ public class ClientHandler {
         if (!running) return;
         running = false;
 
-        // [수정] 다중 방 시스템에 맞게 세션 정보를 포함하여 유저 제거
+        // 다중 방 시스템에 맞게 세션 정보를 포함하여 유저 제거
         KkuGameServer.removePlayerFromSession(this, this.session);
 
         if (name != null) {
@@ -281,7 +281,7 @@ public class ClientHandler {
 
         closeResources();
     }
-
+    //핸들러리소스종료
     private void closeResources() {
         try {
             if (selectionKey != null) {
