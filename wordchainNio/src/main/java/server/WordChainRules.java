@@ -8,25 +8,26 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * 끝말잇기 규칙(단어 유효성 검사 및 점수 관리)을 담당하는 클래스
- */
+// [책임] 끝말잇기 게임의 핵심 비즈니스 로직(단어 검증, 점수 기록, 중복 체크)을 처리하는 도메인 모델
+// [Why] 네트워크 I/O나 세션 관리 로직과 순수 게임 규칙을 분리(관심사 분리)하여, 게임 룰이 변경되더라도 서버의 코어 네트워크 로직에 영향을 주지 않도록 결합도를 낮추기 위함
 public class WordChainRules {
-    // 유저별 점수 저장 (멀티스레드 환경을 고려해 ConcurrentHashMap 사용)
+    
+    // [책임] 유저별 실시간 점수 저장 및 관리
+    // [Why] 여러 워커 스레드가 동시에 점수를 업데이트하거나 조회할 때 데이터가 꼬이는 현상을 방지하기 위해, 내부적으로 락(Lock) 분할 기술을 사용하여 성능 저하를 최소화한 ConcurrentHashMap을 채택함
     private final ConcurrentHashMap<String, Integer> scoreMap = new ConcurrentHashMap<>();
     
     // 마지막으로 입력된 단어
     private String lastWord = "";
     
-    // 중복 단어 입력을 방지하기 위한 단어 히스토리 큐
+    // [책임] 중복 단어 입력을 방지하기 위한 단어 히스토리 큐
     private final Queue<String> wordHistory = new LinkedList<>();
     
-    // 히스토리에 저장할 최대 단어 수 (메모리 관리용)
+    // [책임] 히스토리에 저장할 최대 단어 수 설정 (메모리 제한)
+    // [Why] 게임이 무한정 길어질 경우 수만 개의 단어가 큐에 쌓여 서버의 힙 메모리를 고갈(OOM)시키는 것을 막기 위해, 오래된 단어를 밀어내는 슬라이딩 윈도우 방식을 적용함
     private final int RECENTLY_WORD_LIMIT = 50;
 
-    /**
-     * 입력된 단어가 규칙에 맞는지 검사하는  메서드
-     */
+    // [책임] 클라이언트가 제출한 단어가 끝말잇기 룰(길이, 사전, 중복, 이어말하기)에 완벽히 부합하는지 단계별로 검증
+    // [Why] 검증 도중 다른 스레드가 `lastWord`나 `wordHistory`를 변경하여 오판하는 것을 막기 위해 `synchronized` 키워드로 원자성(Atomicity)을 보장함
     public synchronized WordStatus checkWord(String word) {
         word = word.trim();
 
@@ -35,10 +36,10 @@ public class WordChainRules {
             return WordStatus.TOO_SHORT;
         }
 
-       // 2. 사전 존재 여부 검사 (KoreanWordChecker api연동)
-       if (!KoreanWordChecker.isValidWord(word)) {
-           return WordStatus.NO_WORD;
-       }
+        // 2. 사전 존재 여부 검사 (KoreanWordChecker API 연동)
+        if (!KoreanWordChecker.isValidWord(word)) {
+            return WordStatus.NO_WORD;
+        }
 
         // 3. 중복 검사 (최근에 사용한 단어인지 확인)
         if (wordHistory.contains(word)) {
@@ -59,9 +60,7 @@ public class WordChainRules {
         return WordStatus.SUCCESS;
     }
 
-    /**
-     * 검증에 성공한 단어를 히스토리에 기록하고 마지막 단어로 갱신
-     */
+    // [책임] 검증을 통과한 단어를 공식적인 '마지막 단어'로 갱신하고 히스토리 큐에 추가
     public synchronized void updateWordHistory(String word) {
         wordHistory.add(word);
         
@@ -73,25 +72,21 @@ public class WordChainRules {
         this.lastWord = word;
     }
 
-    /**
-     * 유저에게 점수를 부여하거나 차감
-     */
+    // [책임] 특정 유저에게 점수를 부여하거나 차감
+    // [Why] 단순히 `get()` 후 `put()`을 하면 그 찰나에 다른 스레드가 개입할 수 있으므로, `compute()` 메서드를 사용하여 조회와 연산(업데이트)을 하나의 원자적(Atomic) 작업으로 묶어 완벽한 스레드 안전성을 확보함
     public int addScore(String name, int pt) {
         // 이름이 없으면 0점 리턴, 있으면 기존 점수에 합산
         scoreMap.compute(name, (k, v) -> (v == null) ? pt : v + pt);
         return scoreMap.getOrDefault(name, 0);
     }
 
-    /**
-     * 현재 모든 유저의 점수 현황을 반환
-     */
+    // [책임] 현재 점수판의 스냅샷(복사본)을 생성하여 반환
+    // [Why] 원본 객체(ConcurrentHashMap)의 참조를 그대로 넘기면, 브로드캐스트를 위해 직렬화하는 도중에 점수가 바뀌어 불일치나 `ConcurrentModificationException`이 발생할 수 있으므로 방어적 복사(Defensive Copy)를 수행함
     public Map<String, Integer> getAllScores() {
         return new HashMap<>(scoreMap);
     }
 
-    /**
-     * 게임 종료 시 데이터를 초기화
-     */
+    // [책임] 게임 종료 또는 방 초기화 시 진행 데이터를 리셋하여 다음 게임을 준비함
     public synchronized void resetData() {
         lastWord = "";
         wordHistory.clear();
@@ -102,9 +97,7 @@ public class WordChainRules {
         return lastWord;
     }
 
-    /**
-     * 유저 퇴장 시 점수판에서 제거
-     */
+    // [책임] 유저 퇴장 시 점수판에서 해당 유저의 데이터를 깔끔하게 제거
     public void removeScore(String name) {
         scoreMap.remove(name);
     }
