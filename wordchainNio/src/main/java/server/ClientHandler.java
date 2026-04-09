@@ -1,10 +1,8 @@
 package server;
 
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -119,14 +117,9 @@ public class ClientHandler {
                 payloadBuffer.get(data);
                 payloadBuffer = null;
 
-                Message msg = deserializeMessage(data);
-                if (msg == null) {
-                    handleDisconnection();
-                    return;
-                }
-
+                // [수정] 역직렬화(CPU 병목)를 여기서 하지 않고 데이터 덩어리를 바로 넘깁니다.
                 lastHeartbeat = System.currentTimeMillis();
-                onMessage(msg);
+                onMessage(data); 
             }
         } catch (Exception e) {
             handleDisconnection();
@@ -164,10 +157,17 @@ public class ClientHandler {
 
     // [책임] 조립이 완성된 패킷(Message)을 받아 네트워크 I/O 스레드와 비즈니스 로직 스레드의 작업을 분리
     // [Why] Selector 스레드가 복잡한 게임 룰 검증을 직접 처리하면 다른 유저들의 네트워크 입출력이 멈추게 되므로, Worker Pool에 작업을 위임하여 서버의 동시 처리량을 극대화함
-    private void onMessage(Message msg) {
+    private void onMessage(byte[] data) {
         // Selector 스레드가 여기서 멈추지 않도록, 모든 로직을 워커 풀에 던집니다.
         KkuGameServer.getWorkerPool().execute(() -> {
             try {
+                // 역직렬화를 워커 스레드 내부에서 수행하여 셀렉터의 병목을 완전히 제거합니다.
+                Message msg = deserializeMessage(data);
+                if (msg == null) {
+                    handleDisconnection();
+                    return;
+                }
+
                 // 1. 닉네임 등록 로직 (첫 메시지인 경우)
                 if (name == null) {
                     this.name = msg.getSender();
@@ -180,7 +180,7 @@ public class ClientHandler {
                 handleMessage(msg);
                 
             } catch (Exception e) {
-                System.err.println(name + "의 로직 처리 중 오류: " + e.getMessage());
+                System.err.println((name != null ? name : "알 수 없는 유저") + "의 로직 처리 중 오류: " + e.getMessage());
             }
         });
     }
