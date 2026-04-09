@@ -46,11 +46,11 @@ public class ClientHandler {
         this.selector = selector;
         this.session = session;
     }
-
+    //셀렉터키 이벤트감시상태(read/write) 제어위한설정
     public void setSelectionKey(SelectionKey selectionKey) {
         this.selectionKey = selectionKey;
     }
-
+    //실제 네트워크i/o 를 수행하는 소켓통로 반환
     public SocketChannel getChannel() {
         return channel;
     }
